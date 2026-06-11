@@ -1,0 +1,2542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skyline AC Library | Piplod</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #a855f7;
+            --secondary: #6366f1;
+            --accent: #22d3ee;
+            --pink: #ec4899;
+            --gold: #f59e0b;
+            --dark: #030014;
+            --darker: #010008;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary) var(--dark);
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--dark);
+            color: #e2e8f0;
+            overflow-x: hidden;
+            cursor: none;
+        }
+
+        /* Custom Cursor */
+        .cursor {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--primary);
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 99999;
+            transition: all 0.1s ease;
+            mix-blend-mode: difference;
+        }
+
+        .cursor-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--accent);
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 99999;
+            transition: all 0.05s ease;
+        }
+
+        .cursor.hover {
+            transform: scale(2.5);
+            background: rgba(168, 85, 247, 0.1);
+            border-color: var(--accent);
+        }
+
+        /* Canvas Background */
+        #particleCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        #glowCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* Noise Overlay */
+        .noise-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+            opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+        }
+
+        /* Navigation */
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000;
+            padding: 20px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(20px);
+            background: rgba(3, 0, 20, 0.3);
+            border-bottom: 1px solid rgba(168, 85, 247, 0.1);
+            transition: all 0.5s ease;
+        }
+
+        .nav.scrolled {
+            padding: 15px 50px;
+            background: rgba(3, 0, 20, 0.8);
+            border-bottom: 1px solid rgba(168, 85, 247, 0.3);
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 45px;
+            height: 45px;
+            position: relative;
+        }
+
+        .logo-icon svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .logo-text {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 3px;
+        }
+
+        .logo-sub {
+            font-size: 0.6rem;
+            color: rgba(255,255,255,0.4);
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 40px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: rgba(255,255,255,0.6);
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+            position: relative;
+            font-weight: 500;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: #fff;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .nav-cta {
+            padding: 10px 28px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            border-radius: 30px;
+            color: #fff;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: none;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .nav-cta::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .nav-cta:hover::before {
+            left: 100%;
+        }
+
+        .nav-cta:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(168, 85, 247, 0.5);
+        }
+
+        /* Mobile Menu */
+        .mobile-toggle {
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            cursor: none;
+            z-index: 1001;
+        }
+
+        .mobile-toggle span {
+            width: 30px;
+            height: 2px;
+            background: var(--primary);
+            transition: all 0.3s ease;
+        }
+
+        /* Hero Section */
+        .hero {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            overflow: hidden;
+        }
+
+        .hero-content {
+            text-align: center;
+            z-index: 10;
+            padding: 0 20px;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 20px;
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 30px;
+            font-size: 0.75rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            background: rgba(168, 85, 247, 0.05);
+            animation: fadeInUp 1s ease 0.2s both;
+        }
+
+        .badge-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--accent);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .hero-title {
+            font-family: 'Orbitron', monospace;
+            font-size: clamp(3rem, 8vw, 7rem);
+            font-weight: 900;
+            line-height: 1.05;
+            margin-bottom: 10px;
+            animation: fadeInUp 1s ease 0.4s both;
+        }
+
+        .hero-title .line1 {
+            display: block;
+            background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.8) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-title .line2 {
+            display: block;
+            background: linear-gradient(135deg, var(--primary), var(--pink), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradientShift 5s ease infinite;
+            background-size: 200% 200%;
+        }
+
+        .hero-title .line3 {
+            display: block;
+            font-size: clamp(1.5rem, 4vw, 3.5rem);
+            background: linear-gradient(135deg, var(--accent), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 600;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1rem, 2vw, 1.3rem);
+            color: rgba(255,255,255,0.5);
+            max-width: 600px;
+            margin: 25px auto 40px;
+            line-height: 1.8;
+            font-weight: 300;
+            animation: fadeInUp 1s ease 0.6s both;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            animation: fadeInUp 1s ease 0.8s both;
+        }
+
+        .btn-primary {
+            padding: 16px 40px;
+            background: linear-gradient(135deg, var(--primary), var(--pink));
+            border: none;
+            border-radius: 50px;
+            color: #fff;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: none;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s ease;
+            text-decoration: none;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 15px 40px rgba(168, 85, 247, 0.4);
+        }
+
+        .btn-secondary {
+            padding: 16px 40px;
+            background: transparent;
+            border: 1px solid rgba(168, 85, 247, 0.4);
+            border-radius: 50px;
+            color: #fff;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: none;
+            transition: all 0.4s ease;
+            backdrop-filter: blur(10px);
+            text-decoration: none;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(168, 85, 247, 0.1);
+            border-color: var(--primary);
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(168, 85, 247, 0.2);
+        }
+
+        /* Scroll Indicator */
+        .scroll-indicator {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            animation: fadeInUp 1s ease 1.2s both;
+        }
+
+        .scroll-text {
+            font-size: 0.7rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.3);
+        }
+
+        .scroll-line {
+            width: 1px;
+            height: 60px;
+            background: linear-gradient(to bottom, var(--primary), transparent);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .scroll-line::after {
+            content: '';
+            position: absolute;
+            top: -100%;
+            left: 0;
+            width: 100%;
+            height: 50%;
+            background: var(--accent);
+            animation: scrollDown 2s infinite;
+        }
+
+        @keyframes scrollDown {
+            0% { top: -50%; }
+            100% { top: 150%; }
+        }
+
+        /* Floating Orbs in Hero */
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            animation: float 8s ease-in-out infinite;
+            z-index: 1;
+        }
+
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(168, 85, 247, 0.3), transparent);
+            top: 10%;
+            left: -5%;
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            width: 350px;
+            height: 350px;
+            background: radial-gradient(circle, rgba(236, 72, 153, 0.25), transparent);
+            top: 50%;
+            right: -5%;
+            animation-delay: -3s;
+        }
+
+        .orb-3 {
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(34, 211, 238, 0.2), transparent);
+            bottom: 10%;
+            left: 30%;
+            animation-delay: -5s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -30px) scale(1.05); }
+            66% { transform: translate(-20px, 20px) scale(0.95); }
+        }
+
+        /* Stats Section */
+        .stats-section {
+            position: relative;
+            z-index: 10;
+            padding: 80px 50px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 40px 20px;
+            border: 1px solid rgba(168, 85, 247, 0.1);
+            border-radius: 20px;
+            background: rgba(168, 85, 247, 0.03);
+            backdrop-filter: blur(10px);
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), transparent);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .stat-card:hover {
+            border-color: rgba(168, 85, 247, 0.4);
+            transform: translateY(-5px);
+            box-shadow: 0 20px 60px rgba(168, 85, 247, 0.15);
+        }
+
+        .stat-card:hover::before {
+            opacity: 1;
+        }
+
+        .stat-number {
+            font-family: 'Orbitron', monospace;
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.5);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* Section Headers */
+        .section-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .section-tag {
+            display: inline-block;
+            font-size: 0.75rem;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .section-tag::before,
+        .section-tag::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 40px;
+            height: 1px;
+            background: linear-gradient(90deg, var(--accent), transparent);
+        }
+
+        .section-tag::before {
+            right: calc(100% + 15px);
+            background: linear-gradient(270deg, var(--accent), transparent);
+        }
+
+        .section-tag::after {
+            left: calc(100% + 15px);
+        }
+
+        .section-title {
+            font-family: 'Orbitron', monospace;
+            font-size: clamp(2rem, 4vw, 3.5rem);
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff, rgba(255,255,255,0.6));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 15px;
+        }
+
+        .section-desc {
+            font-size: 1.1rem;
+            color: rgba(255,255,255,0.4);
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.7;
+        }
+
+        /* Services Section */
+        .services-section {
+            position: relative;
+            z-index: 10;
+            padding: 100px 50px;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .service-card {
+            padding: 50px 35px;
+            border: 1px solid rgba(168, 85, 247, 0.1);
+            border-radius: 24px;
+            background: rgba(10, 0, 30, 0.6);
+            backdrop-filter: blur(20px);
+            transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+            position: relative;
+            overflow: hidden;
+            group: true;
+        }
+
+        .service-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(from 0deg, transparent, rgba(168, 85, 247, 0.1), transparent, rgba(34, 211, 238, 0.1), transparent);
+            animation: rotate 10s linear infinite;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .service-card:hover::before {
+            opacity: 1;
+        }
+
+        @keyframes rotate {
+            100% { transform: rotate(360deg); }
+        }
+
+        .service-card::after {
+            content: '';
+            position: absolute;
+            inset: 1px;
+            background: rgba(10, 0, 30, 0.9);
+            border-radius: 23px;
+            z-index: 0;
+        }
+
+        .service-card > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .service-card:hover {
+            transform: translateY(-10px);
+            border-color: rgba(168, 85, 247, 0.3);
+        }
+
+        .service-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(99, 102, 241, 0.1));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 25px;
+            font-size: 2rem;
+            transition: all 0.4s ease;
+            border: 1px solid rgba(168, 85, 247, 0.2);
+        }
+
+        .service-card:hover .service-icon {
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: 0 10px 30px rgba(168, 85, 247, 0.3);
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(236, 72, 153, 0.2));
+        }
+
+        .service-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: #fff;
+        }
+
+        .service-desc {
+            font-size: 0.95rem;
+            color: rgba(255,255,255,0.4);
+            line-height: 1.7;
+            margin-bottom: 25px;
+        }
+
+        .service-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+
+        .service-link:hover {
+            color: var(--accent);
+            gap: 15px;
+        }
+
+        /* Marquee Section */
+        .marquee-section {
+            position: relative;
+            z-index: 10;
+            padding: 60px 0;
+            overflow: hidden;
+            border-top: 1px solid rgba(168, 85, 247, 0.1);
+            border-bottom: 1px solid rgba(168, 85, 247, 0.1);
+        }
+
+        .marquee-track {
+            display: flex;
+            gap: 60px;
+            animation: marquee 30s linear infinite;
+            width: max-content;
+        }
+
+        .marquee-item {
+            font-family: 'Orbitron', monospace;
+            font-size: 2rem;
+            font-weight: 700;
+            white-space: nowrap;
+            color: rgba(255,255,255,0.06);
+            text-transform: uppercase;
+            letter-spacing: 8px;
+            display: flex;
+            align-items: center;
+            gap: 60px;
+        }
+
+        .marquee-item .dot {
+            width: 10px;
+            height: 10px;
+            background: var(--primary);
+            border-radius: 50%;
+            opacity: 0.3;
+        }
+
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        /* Gallery / Facilities Section */
+        .gallery-section {
+            position: relative;
+            z-index: 10;
+            padding: 100px 50px;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            grid-template-rows: repeat(2, 300px);
+            gap: 20px;
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        .gallery-item {
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+            cursor: none;
+            transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+            border: 1px solid rgba(168, 85, 247, 0.1);
+        }
+
+        .gallery-item:nth-child(1) { grid-column: span 5; }
+        .gallery-item:nth-child(2) { grid-column: span 4; }
+        .gallery-item:nth-child(3) { grid-column: span 3; }
+        .gallery-item:nth-child(4) { grid-column: span 4; }
+        .gallery-item:nth-child(5) { grid-column: span 4; }
+        .gallery-item:nth-child(6) { grid-column: span 4; }
+
+        .gallery-item:hover {
+            transform: scale(1.02);
+            border-color: var(--primary);
+            box-shadow: 0 20px 60px rgba(168, 85, 247, 0.2);
+        }
+
+        .gallery-bg {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .gallery-gradient {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .gallery-item:nth-child(1) .gallery-gradient {
+            background: linear-gradient(135deg, #1a0533, #0d1b3e, #0a1628);
+        }
+        .gallery-item:nth-child(2) .gallery-gradient {
+            background: linear-gradient(135deg, #1a0a2e, #2d1b4e, #0f0a1a);
+        }
+        .gallery-item:nth-child(3) .gallery-gradient {
+            background: linear-gradient(135deg, #0a1628, #132040, #0d0d1a);
+        }
+        .gallery-item:nth-child(4) .gallery-gradient {
+            background: linear-gradient(135deg, #0f1a0a, #1a2e1a, #0a1a0a);
+        }
+        .gallery-item:nth-child(5) .gallery-gradient {
+            background: linear-gradient(135deg, #2e1a0a, #3e2b1b, #1a0f0a);
+        }
+        .gallery-item:nth-child(6) .gallery-gradient {
+            background: linear-gradient(135deg, #1a0a1a, #2e1a3e, #0a0a1a);
+        }
+
+        .gallery-icon {
+            font-size: 4rem;
+            opacity: 0.3;
+            transition: all 0.5s ease;
+        }
+
+        .gallery-item:hover .gallery-icon {
+            opacity: 0.7;
+            transform: scale(1.2);
+        }
+
+        .gallery-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 30px;
+            background: linear-gradient(to top, rgba(3, 0, 20, 0.95), transparent);
+            transform: translateY(30px);
+            opacity: 0;
+            transition: all 0.5s ease;
+        }
+
+        .gallery-item:hover .gallery-overlay {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .gallery-overlay h3 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .gallery-overlay p {
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.5);
+        }
+
+        /* Timings Section */
+        .timings-section {
+            position: relative;
+            z-index: 10;
+            padding: 100px 50px;
+        }
+
+        .timings-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+        }
+
+        .timings-visual {
+            position: relative;
+            height: 500px;
+            border-radius: 30px;
+            overflow: hidden;
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            background: linear-gradient(135deg, #0a0020, #1a0040, #0a0020);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .clock-display {
+            text-align: center;
+        }
+
+        .clock-time {
+            font-family: 'Orbitron', monospace;
+            font-size: 4rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .clock-label {
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.3);
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            margin-top: 10px;
+        }
+
+        .clock-ring {
+            position: absolute;
+            border: 1px solid rgba(168, 85, 247, 0.1);
+            border-radius: 50%;
+            animation: clockPulse 4s ease-in-out infinite;
+        }
+
+        .clock-ring:nth-child(1) { width: 200px; height: 200px; animation-delay: 0s; }
+        .clock-ring:nth-child(2) { width: 280px; height: 280px; animation-delay: -1s; }
+        .clock-ring:nth-child(3) { width: 360px; height: 360px; animation-delay: -2s; }
+        .clock-ring:nth-child(4) { width: 440px; height: 440px; animation-delay: -3s; }
+
+        @keyframes clockPulse {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+        }
+
+        .timings-info {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .timing-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 25px;
+            border: 1px solid rgba(168, 85, 247, 0.1);
+            border-radius: 16px;
+            background: rgba(10, 0, 30, 0.5);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .timing-row:hover {
+            border-color: rgba(168, 85, 247, 0.3);
+            background: rgba(168, 85, 247, 0.05);
+            transform: translateX(5px);
+        }
+
+        .timing-day {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .timing-hours {
+            color: var(--accent);
+            font-family: 'Orbitron', monospace;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .timing-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-top: 15px;
+        }
+
+        .timing-status.open {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            color: #22c55e;
+        }
+
+        .timing-status.closed {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.green { background: #22c55e; }
+        .status-dot.red { background: #ef4444; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* Membership Plans */
+        .plans-section {
+            position: relative;
+            z-index: 10;
+            padding: 100px 50px;
+        }
+
+        .plans-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .plan-card {
+            padding: 50px 35px;
+            border: 1px solid rgba(168, 85, 247, 0.1);
+            border-radius: 24px;
+            background: rgba(10, 0, 30, 0.6);
+            backdrop-filter: blur(20px);
+            transition: all 0.5s ease;
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .plan-card.featured {
+            border-color: rgba(168, 85, 247, 0.4);
+            background: rgba(168, 85, 247, 0.05);
+            transform: scale(1.05);
+        }
+
+        .plan-card.featured::before {
+            content: 'MOST POPULAR';
+            position: absolute;
+            top: 20px;
+            right: -35px;
+            background: linear-gradient(135deg, var(--primary), var(--pink));
+            color: #fff;
+            font-size: 0.65rem;
+            letter-spacing: 2px;
+            padding: 5px 40px;
+            transform: rotate(45deg);
+            font-weight: 700;
+        }
+
+        .plan-card:hover {
+            border-color: rgba(168, 85, 247, 0.4);
+            transform: translateY(-10px);
+            box-shadow: 0 30px 80px rgba(168, 85, 247, 0.15);
+        }
+
+        .plan-card.featured:hover {
+            transform: scale(1.05) translateY(-10px);
+        }
+
+        .plan-name {
+            font-family: 'Orbitron', monospace;
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 20px;
+        }
+
+        .plan-price {
+            font-family: 'Orbitron', monospace;
+            font-size: 3.5rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #fff, rgba(255,255,255,0.7));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 5px;
+        }
+
+        .plan-price span {
+            font-size: 1rem;
+            font-weight: 400;
+        }
+
+        .plan-period {
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.3);
+            margin-bottom: 30px;
+        }
+
+        .plan-features {
+            list-style: none;
+            text-align: left;
+            margin-bottom: 35px;
+        }
+
+        .plan-features li {
+            padding: 10px 0;
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.6);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .plan-features li:last-child {
+            border-bottom: none;
+        }
+
+        .check-icon {
+            color: var(--accent);
+            font-weight: bold;
+        }
+
+        .plan-btn {
+            width: 100%;
+            padding: 16px 30px;
+            border-radius: 50px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: none;
+            transition: all 0.4s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .plan-btn.primary {
+            background: linear-gradient(135deg, var(--primary), var(--pink));
+            border: none;
+            color: #fff;
+        }
+
+        .plan-btn.secondary {
+            background: transparent;
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            color: #fff;
+        }
+
+        .plan-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(168, 85, 247, 0.3);
+        }
+
+        /* Testimonials */
+        .testimonials-section {
+            position: relative;
+            z-index: 10;
+            padding: 100px 50px;
+        }
+
+        .testimonials-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .testimonial-card {
+            padding: 40px;
+            border: 1px solid rgba(168, 85, 247, 0.1);
+            border-radius: 24px;
+            background: rgba(10, 0, 30, 0.4);
+            backdrop-filter: blur(15px);
+            transition: all 0.4s ease;
+        }
+
+        .testimonial-card:hover {
+            border-color: rgba(168, 85, 247, 0.3);
+            transform: translateY(-5px);
+        }
+
+        .testimonial-stars {
+            color: var(--gold);
+            font-size: 1rem;
+            margin-bottom: 20px;
+            letter-spacing: 3px;
+        }
+
+        .testimonial-text {
+            font-size: 1rem;
+            line-height: 1.8;
+            color: rgba(255,255,255,0.6);
+            margin-bottom: 25px;
+            font-style: italic;
+        }
+
+        .testimonial-author {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .author-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .author-avatar.a1 { background: linear-gradient(135deg, var(--primary), var(--pink)); }
+        .author-avatar.a2 { background: linear-gradient(135deg, var(--secondary), var(--accent)); }
+        .author-avatar.a3 { background: linear-gradient(135deg, var(--pink), var(--gold)); }
+
+        .author-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .author-role {
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.3);
+        }
+
+        /* Contact Section */
+        .contact-section {
+            position: relative;
+            z-index: 10;
+            padding: 100px 50px;
+        }
+
+        .contact-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+        }
+
+        .contact-info {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .contact-info-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff, rgba(255,255,255,0.7));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1.3;
+        }
+
+        .contact-info-desc {
+            color: rgba(255,255,255,0.4);
+            line-height: 1.8;
+            font-size: 1rem;
+        }
+
+        .contact-detail {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px 0;
+        }
+
+        .contact-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 15px;
+            background: rgba(168, 85, 247, 0.1);
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .contact-detail-text h4 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+
+        .contact-detail-text p {
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.4);
+        }
+
+        .contact-form {
+            padding: 50px;
+            border: 1px solid rgba(168, 85, 247, 0.15);
+            border-radius: 24px;
+            background: rgba(10, 0, 30, 0.5);
+            backdrop-filter: blur(20px);
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 8px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 15px 20px;
+            background: rgba(168, 85, 247, 0.05);
+            border: 1px solid rgba(168, 85, 247, 0.15);
+            border-radius: 12px;
+            color: #fff;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.15);
+            background: rgba(168, 85, 247, 0.08);
+        }
+
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .form-submit {
+            width: 100%;
+            padding: 16px 30px;
+            background: linear-gradient(135deg, var(--primary), var(--pink));
+            border: none;
+            border-radius: 50px;
+            color: #fff;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: none;
+            transition: all 0.4s ease;
+        }
+
+        .form-submit:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(168, 85, 247, 0.4);
+        }
+
+        /* Footer */
+        .footer {
+            position: relative;
+            z-index: 10;
+            padding: 80px 50px 30px;
+            border-top: 1px solid rgba(168, 85, 247, 0.1);
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 60px;
+            max-width: 1200px;
+            margin: 0 auto 60px;
+        }
+
+        .footer-brand .logo-text {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+
+        .footer-desc {
+            color: rgba(255,255,255,0.3);
+            line-height: 1.7;
+            font-size: 0.9rem;
+            margin-top: 15px;
+        }
+
+        .footer-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--primary);
+            margin-bottom: 25px;
+        }
+
+        .footer-links {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .footer-links a {
+            color: rgba(255,255,255,0.4);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--accent);
+            padding-left: 5px;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 30px;
+            border-top: 1px solid rgba(168, 85, 247, 0.1);
+        }
+
+        .footer-bottom p {
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.2);
+            letter-spacing: 1px;
+        }
+
+        .footer-socials {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .social-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255,255,255,0.5);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-size: 1.1rem;
+        }
+
+        .social-icon:hover {
+            border-color: var(--primary);
+            background: rgba(168, 85, 247, 0.1);
+            color: var(--primary);
+            transform: translateY(-3px);
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Glowing line separators */
+        .glow-line {
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--primary), var(--accent), var(--pink), transparent);
+            opacity: 0.3;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .services-grid, .plans-grid, .testimonials-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .plan-card.featured {
+                transform: scale(1);
+            }
+            .plan-card.featured:hover {
+                transform: translateY(-10px);
+            }
+            .gallery-grid {
+                grid-template-columns: repeat(6, 1fr);
+                grid-template-rows: repeat(3, 250px);
+            }
+            .gallery-item:nth-child(1) { grid-column: span 3; }
+            .gallery-item:nth-child(2) { grid-column: span 3; }
+            .gallery-item:nth-child(3) { grid-column: span 3; }
+            .gallery-item:nth-child(4) { grid-column: span 3; }
+            .gallery-item:nth-child(5) { grid-column: span 3; }
+            .gallery-item:nth-child(6) { grid-column: span 3; }
+        }
+
+        @media (max-width: 768px) {
+            .nav {
+                padding: 15px 20px;
+            }
+            .nav-links {
+                display: none;
+            }
+            .nav-cta {
+                display: none;
+            }
+            .mobile-toggle {
+                display: flex;
+            }
+            .hero-content {
+                padding: 0 15px;
+            }
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .services-grid, .plans-grid, .testimonials-grid {
+                grid-template-columns: 1fr;
+            }
+            .timings-container, .contact-container {
+                grid-template-columns: 1fr;
+            }
+            .gallery-grid {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto;
+            }
+            .gallery-item:nth-child(n) { grid-column: span 1; }
+            .footer-grid {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+            .services-section, .gallery-section, .timings-section,
+            .plans-section, .testimonials-section, .contact-section {
+                padding: 60px 20px;
+            }
+            .stats-section {
+                padding: 40px 20px;
+            }
+            .contact-form {
+                padding: 30px;
+            }
+        }
+
+        /* Mobile Menu Overlay */
+        .mobile-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(3, 0, 20, 0.98);
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.5s ease;
+        }
+
+        .mobile-menu.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .mobile-menu-links {
+            list-style: none;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .mobile-menu-links a {
+            font-family: 'Orbitron', monospace;
+            font-size: 2rem;
+            font-weight: 700;
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            letter-spacing: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .mobile-menu-links a:hover {
+            color: var(--primary);
+        }
+
+        /* Floating particles mouse follow */
+        .mouse-glow {
+            position: fixed;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(168, 85, 247, 0.06), transparent 70%);
+            pointer-events: none;
+            z-index: 3;
+            transform: translate(-50%, -50%);
+            transition: all 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <!-- Custom Cursor -->
+    <div class="cursor" id="cursor"></div>
+    <div class="cursor-dot" id="cursorDot"></div>
+    <div class="mouse-glow" id="mouseGlow"></div>
+
+    <!-- Particle Canvas -->
+    <canvas id="particleCanvas"></canvas>
+    <canvas id="glowCanvas"></canvas>
+
+    <!-- Noise Overlay -->
+    <div class="noise-overlay"></div>
+
+    <!-- Navigation -->
+    <nav class="nav" id="nav">
+        <a href="#" class="nav-logo">
+            <div class="logo-icon">
+                <svg viewBox="0 0 50 50" fill="none">
+                    <path d="M25 5 L45 15 L45 35 L25 45 L5 35 L5 15 Z" stroke="url(#logoGrad)" stroke-width="1.5" fill="none"/>
+                    <path d="M25 12 L38 19 L38 33 L25 40 L12 33 L12 19 Z" stroke="url(#logoGrad2)" stroke-width="1" fill="rgba(168,85,247,0.05)"/>
+                    <path d="M15 22 L25 17 L35 22 L35 32 L25 37 L15 32 Z" fill="url(#logoGrad3)" opacity="0.3"/>
+                    <circle cx="25" cy="27" r="4" fill="url(#logoGrad)" opacity="0.8"/>
+                    <defs>
+                        <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#a855f7"/>
+                            <stop offset="100%" style="stop-color:#22d3ee"/>
+                        </linearGradient>
+                        <linearGradient id="logoGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#ec4899"/>
+                            <stop offset="100%" style="stop-color:#a855f7"/>
+                        </linearGradient>
+                        <linearGradient id="logoGrad3" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#a855f7"/>
+                            <stop offset="50%" style="stop-color:#6366f1"/>
+                            <stop offset="100%" style="stop-color:#22d3ee"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+            </div>
+            <div>
+                <div class="logo-text">SKYLINE</div>
+                <div class="logo-sub">AC Library • Piplod</div>
+            </div>
+        </a>
+        <ul class="nav-links">
+            <li><a href="#home" data-hover>Home</a></li>
+            <li><a href="#services" data-hover>Services</a></li>
+            <li><a href="#facilities" data-hover>Facilities</a></li>
+            <li><a href="#timings" data-hover>Timings</a></li>
+            <li><a href="#plans" data-hover>Plans</a></li>
+        </ul>
+        <a href="#contact" class="nav-cta" data-hover>Join Now</a>
+        <div class="mobile-toggle" id="mobileToggle">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu">
+        <ul class="mobile-menu-links">
+            <li><a href="#home" onclick="closeMobile()">Home</a></li>
+            <li><a href="#services" onclick="closeMobile()">Services</a></li>
+            <li><a href="#facilities" onclick="closeMobile()">Facilities</a></li>
+            <li><a href="#timings" onclick="closeMobile()">Timings</a></li>
+            <li><a href="#plans" onclick="closeMobile()">Plans</a></li>
+            <li><a href="#contact" onclick="closeMobile()">Contact</a></li>
+        </ul>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+
+        <div class="hero-content">
+            <div class="hero-badge">
+                <span class="badge-dot"></span>
+                Piplod's Premium Study Space
+            </div>
+            <h1 class="hero-title">
+                <span class="line1">SKYLINE</span>
+                <span class="line2">AC LIBRARY</span>
+                <span class="line3">Where Focus Meets Comfort</span>
+            </h1>
+            <p class="hero-subtitle">
+                Experience the future of studying in Piplod's most premium air-conditioned 
+                library. High-speed WiFi, silent zones, and an atmosphere designed for success.
+            </p>
+            <div class="hero-buttons">
+                <a href="#plans" class="btn-primary" data-hover>Get Membership</a>
+                <a href="#facilities" class="btn-secondary" data-hover>Explore Space</a>
+            </div>
+        </div>
+
+        <div class="scroll-indicator">
+            <span class="scroll-text">Scroll</span>
+            <div class="scroll-line"></div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats-section">
+        <div class="stats-grid">
+            <div class="stat-card reveal">
+                <div class="stat-number" data-count="200">0</div>
+                <div class="stat-label">Seats Available</div>
+            </div>
+            <div class="stat-card reveal">
+                <div class="stat-number" data-count="500">0</div>
+                <div class="stat-label">Active Members</div>
+            </div>
+            <div class="stat-card reveal">
+                <div class="stat-number" data-count="15">0</div>
+                <div class="stat-label">Hours Open Daily</div>
+            </div>
+            <div class="stat-card reveal">
+                <div class="stat-number" data-count="98">0</div>
+                <div class="stat-label">% Satisfaction</div>
+            </div>
+        </div>
+    </section>
+
+    <div class="glow-line"></div>
+
+    <!-- Services Section -->
+    <section class="services-section" id="services">
+        <div class="section-header reveal">
+            <div class="section-tag">What We Offer</div>
+            <h2 class="section-title">PREMIUM SERVICES</h2>
+            <p class="section-desc">Everything you need for the perfect study environment, all under one roof.</p>
+        </div>
+
+        <div class="services-grid">
+            <div class="service-card reveal">
+                <div class="service-icon">❄️</div>
+                <h3 class="service-title">Full AC Environment</h3>
+                <p class="service-desc">Climate-controlled at the perfect temperature year-round. Study in absolute comfort regardless of the weather outside.</p>
+                <a href="#" class="service-link" data-hover>Learn more →</a>
+            </div>
+            <div class="service-card reveal">
+                <div class="service-icon">📶</div>
+                <h3 class="service-title">High-Speed WiFi</h3>
+                <p class="service-desc">Lightning-fast internet connectivity for research, online classes, and downloading study materials without any buffering.</p>
+                <a href="#" class="service-link" data-hover>Learn more →</a>
+            </div>
+            <div class="service-card reveal">
+                <div class="service-icon">🔇</div>
+                <h3 class="service-title">Silent Study Zones</h3>
+                <p class="service-desc">Dedicated quiet zones with soundproofing for deep focus sessions. No distractions, just pure concentration.</p>
+                <a href="#" class="service-link" data-hover>Learn more →</a>
+            </div>
+            <div class="service-card reveal">
+                <div class="service-icon">💡</div>
+                <h3 class="service-title">Personal Desk Lights</h3>
+                <p class="service-desc">Each seat equipped with adjustable LED desk lamps to reduce eye strain during long study sessions.</p>
+                <a href="#" class="service-link" data-hover>Learn more →</a>
+            </div>
+            <div class="service-card reveal">
+                <div class="service-icon">🔌</div>
+                <h3 class="service-title">Power Outlets</h3>
+                <p class="service-desc">Individual charging points at every desk for laptops, tablets, and phones. Never run out of battery again.</p>
+                <a href="#" class="service-link" data-hover>Learn more →</a>
+            </div>
+            <div class="service-card reveal">
+                <div class="service-icon">☕</div>
+                <h3 class="service-title">Refreshment Zone</h3>
+                <p class="service-desc">In-house cafeteria with tea, coffee, snacks and light meals to keep you energized throughout your study sessions.</p>
+                <a href="#" class="service-link" data-hover>Learn more →</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Marquee -->
+    <div class="marquee-section">
+        <div class="marquee-track">
+            <span class="marquee-item">Study <span class="dot"></span> Focus <span class="dot"></span> Achieve <span class="dot"></span> Excel <span class="dot"></span> Succeed <span class="dot"></span> Learn <span class="dot"></span> Grow <span class="dot"></span> Dream <span class="dot"></span></span>
+            <span class="marquee-item">Study <span class="dot"></span> Focus <span class="dot"></span> Achieve <span class="dot"></span> Excel <span class="dot"></span> Succeed <span class="dot"></span> Learn <span class="dot"></span> Grow <span class="dot"></span> Dream <span class="dot"></span></span>
+        </div>
+    </div>
+
+    <!-- Facilities Gallery -->
+    <section class="gallery-section" id="facilities">
+        <div class="section-header reveal">
+            <div class="section-tag">Our Space</div>
+            <h2 class="section-title">EXPLORE FACILITIES</h2>
+            <p class="section-desc">A peek into our world-class study environment designed for peak performance.</p>
+        </div>
+
+        <div class="gallery-grid">
+            <div class="gallery-item reveal">
+                <div class="gallery-bg">
+                    <div class="gallery-gradient">
+                        <span class="gallery-icon">📚</span>
+                    </div>
+                </div>
+                <div class="gallery-overlay">
+                    <h3>Main Study Hall</h3>
+                    <p>150+ premium seats with ergonomic chairs</p>
+                </div>
+            </div>
+            <div class="gallery-item reveal">
+                <div class="gallery-bg">
+                    <div class="gallery-gradient">
+                        <span class="gallery-icon">🤫</span>
+                    </div>
+                </div>
+                <div class="gallery-overlay">
+                    <h3>Silent Zone</h3>
+                    <p>Soundproof rooms for ultimate focus</p>
+                </div>
+            </div>
+            <div class="gallery-item reveal">
+                <div class="gallery-bg">
+                    <div class="gallery-gradient">
+                        <span class="gallery-icon">💻</span>
+                    </div>
+                </div>
+                <div class="gallery-overlay">
+                    <h3>Digital Lab</h3>
+                    <p>Computer stations with high-speed internet</p>
+                </div>
+            </div>
+            <div class="gallery-item reveal">
+                <div class="gallery-bg">
+                    <div class="gallery-gradient">
+                        <span class="gallery-icon">🌿</span>
+                    </div>
+                </div>
+                <div class="gallery-overlay">
+                    <h3>Relaxation Area</h3>
+                    <p>Green space to recharge between sessions</p>
+                </div>
+            </div>
+            <div class="gallery-item reveal">
+                <div class="gallery-bg">
+                    <div class="gallery-gradient">
+                        <span class="gallery-icon">☕</span>
+                    </div>
+                </div>
+                <div class="gallery-overlay">
+                    <h3>Café Zone</h3>
+                    <p>Refreshments and light snacks</p>
+                </div>
+            </div>
+            <div class="gallery-item reveal">
+                <div class="gallery-bg">
+                    <div class="gallery-gradient">
+                        <span class="gallery-icon">👥</span>
+                    </div>
+                </div>
+                <div class="gallery-overlay">
+                    <h3>Discussion Rooms</h3>
+                    <p>Group study and collaboration spaces</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="glow-line"></div>
+
+    <!-- Timings Section -->
+    <section class="timings-section" id="timings">
+        <div class="section-header reveal">
+            <div class="section-tag">Hours</div>
+            <h2 class="section-title">LIBRARY TIMINGS</h2>
+            <p class="section-desc">We're open when you need us. Extended hours for exam seasons.</p>
+        </div>
+
+        <div class="timings-container">
+            <div class="timings-visual reveal">
+                <div class="clock-ring"></div>
+                <div class="clock-ring"></div>
+                <div class="clock-ring"></div>
+                <div class="clock-ring"></div>
+                <div class="clock-display">
+                    <div class="clock-time" id="liveClock">00:00</div>
+                    <div class="clock-label">Current Time</div>
+                    <div class="timing-status open" id="statusBadge">
+                        <span class="status-dot green"></span>
+                        Open Now
+                    </div>
+                </div>
+            </div>
+
+            <div class="timings-info reveal">
+                <div class="timing-row">
+                    <span class="timing-day">Monday - Friday</span>
+                    <span class="timing-hours">06:00 - 23:00</span>
+                </div>
+                <div class="timing-row">
+                    <span class="timing-day">Saturday</span>
+                    <span class="timing-hours">07:00 - 22:00</span>
+                </div>
+                <div class="timing-row">
+                    <span class="timing-day">Sunday</span>
+                    <span class="timing-hours">08:00 - 20:00</span>
+                </div>
+                <div class="timing-row">
+                    <span class="timing-day">🎓 Exam Season</span>
+                    <span class="timing-hours">05:00 - 00:00</span>
+                </div>
+                <div class="timing-row">
+                    <span class="timing-day">🎉 Holidays</span>
+                    <span class="timing-hours">09:00 - 18:00</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Plans Section -->
+    <section class="plans-section" id="plans">
+        <div class="section-header reveal">
+            <div class="section-tag">Pricing</div>
+            <h2 class="section-title">MEMBERSHIP PLANS</h2>
+            <p class="section-desc">Flexible plans designed for every student's budget and study needs.</p>
+        </div>
+
+        <div class="plans-grid">
+            <div class="plan-card reveal">
+                <div class="plan-name">Daily Pass</div>
+                <div class="plan-price">₹50</div>
+                <div class="plan-period">per day</div>
+                <ul class="plan-features">
+                    <li><span class="check-icon">✓</span> Full AC environment</li>
+                    <li><span class="check-icon">✓</span> WiFi access</li>
+                    <li><span class="check-icon">✓</span> Desk & chair</li>
+                    <li><span class="check-icon">✓</span> Power outlet</li>
+                    <li><span class="check-icon">✓</span> Drinking water</li>
+                </ul>
+                <a href="#contact" class="plan-btn secondary" data-hover>Get Started</a>
+            </div>
+
+            <div class="plan-card featured reveal">
+                <div class="plan-name">Monthly</div>
+                <div class="plan-price">₹999</div>
+                <div class="plan-period">per month</div>
+                <ul class="plan-features">
+                    <li><span class="check-icon">✓</span> Everything in Daily</li>
+                    <li><span class="check-icon">✓</span> Reserved seat</li>
+                    <li><span class="check-icon">✓</span> Locker access</li>
+                    <li><span class="check-icon">✓</span> Silent zone access</li>
+                    <li><span class="check-icon">✓</span> 2 free coffees/day</li>
+                    <li><span class="check-icon">✓</span> Extended hours</li>
+                </ul>
+                <a href="#contact" class="plan-btn primary" data-hover>Get Started</a>
+            </div>
+
+            <div class="plan-card reveal">
+                <div class="plan-name">Yearly</div>
+                <div class="plan-price">₹8999</div>
+                <div class="plan-period">per year</div>
+                <ul class="plan-features">
+                    <li><span class="check-icon">✓</span> Everything in Monthly</li>
+                    <li><span class="check-icon">✓</span> Premium seat</li>
+                    <li><span class="check-icon">✓</span> Discussion room</li>
+                    <li><span class="check-icon">✓</span> Priority booking</li>
+                    <li><span class="check-icon">✓</span> Unlimited café</li>
+                    <li><span class="check-icon">✓</span> 25% savings</li>
+                </ul>
+                <a href="#contact" class="plan-btn secondary" data-hover>Get Started</a>
+            </div>
+        </div>
+    </section>
+
+    <div class="glow-line"></div>
+
+    <!-- Testimonials -->
+    <section class="testimonials-section">
+        <div class="section-header reveal">
+            <div class="section-tag">Reviews</div>
+            <h2 class="section-title">WHAT STUDENTS SAY</h2>
+            <p class="section-desc">Real experiences from our members who achieved their goals.</p>
+        </div>
+
+        <div class="testimonials-grid">
+            <div class="testimonial-card reveal">
+                <div class="testimonial-stars">★★★★★</div>
+                <p class="testimonial-text">"Skyline AC Library completely transformed my study routine. The silent zone helped me crack NEET with AIR under 5000. Best investment ever!"</p>
+                <div class="testimonial-author">
+                    <div class="author-avatar a1">P</div>
+                    <div>
+                        <div class="author-name">Priya Sharma</div>
+                        <div class="author-role">NEET Aspirant, 2024</div>
+                    </div>
+                </div>
+            </div>
+            <div class="testimonial-card reveal">
+                <div class="testimonial-stars">★★★★★</div>
+                <p class="testimonial-text">"The AC, WiFi, and calm atmosphere are unmatched in Piplod. I scored 95+ percentile in CAT while studying here. Highly recommend to everyone!"</p>
+                <div class="testimonial-author">
+                    <div class="author-avatar a2">R</div>
+                    <div>
+                        <div class="author-name">Rahul Patel</div>
+                        <div class="author-role">CAT Aspirant, MBA Student</div>
+                    </div>
+                </div>
+            </div>
+            <div class="testimonial-card reveal">
+                <div class="testimonial-stars">★★★★★</div>
+                <p class="testimonial-text">"As a CA student, long study hours are essential. Skyline provides the perfect environment with comfy chairs and great lighting. Love the café too!"</p>
+                <div class="testimonial-author">
+                    <div class="author-avatar a3">A</div>
+                    <div>
+                        <div class="author-name">Anjali Mehta</div>
+                        <div class="author-role">CA Final Student</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section class="contact-section" id="contact">
+        <div class="contact-container">
+            <div class="contact-info reveal">
+                <h2 class="contact-info-title">Ready to<br>Start Your<br>Journey?</h2>
+                <p class="contact-info-desc">Visit us at Piplod or drop a message. We'd love to show you around our space and find the perfect plan for you.</p>
+
+                <div class="contact-detail">
+                    <div class="contact-icon">📍</div>
+                    <div class="contact-detail-text">
+                        <h4>Location</h4>
+                        <p>Skyline AC Library, Piplod, Surat, Gujarat</p>
+                    </div>
+                </div>
+                <div class="contact-detail">
+                    <div class="contact-icon">📞</div>
+                    <div class="contact-detail-text">
+                        <h4>Phone</h4>
+                        <p>+91 98765 43210</p>
+                    </div>
+                </div>
+                <div class="contact-detail">
+                    <div class="contact-icon">✉️</div>
+                    <div class="contact-detail-text">
+                        <h4>Email</h4>
+                        <p>info@skylinelibrary.in</p>
+                    </div>
+                </div>
+                <div class="contact-detail">
+                    <div class="contact-icon">⏰</div>
+                    <div class="contact-detail-text">
+                        <h4>Open Hours</h4>
+                        <p>Mon-Fri: 6AM - 11PM | Sat-Sun: 7AM - 10PM</p>
+                    </div>
+                </div>
+
+                <div class="footer-socials">
+                    <a href="#" class="social-icon" data-hover>📸</a>
+                    <a href="#" class="social-icon" data-hover>📘</a>
+                    <a href="#" class="social-icon" data-hover>🐦</a>
+                    <a href="#" class="social-icon" data-hover>▶️</a>
+                </div>
+            </div>
+
+            <form class="contact-form reveal" onsubmit="handleSubmit(event)">
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" placeholder="Enter your name" required>
+                </div>
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" placeholder="Enter your email" required>
+                </div>
+                <div class="form-group">
+                    <label>Phone Number</label>
+                    <input type="tel" placeholder="Enter your phone number">
+                </div>
+                <div class="form-group">
+                    <label>Message</label>
+                    <textarea placeholder="Tell us about your requirements..."></textarea>
+                </div>
+                <button type="submit" class="form-submit" data-hover>Send Message ✨</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <div class="logo-text">SKYLINE AC LIBRARY</div>
+                <p class="footer-desc">Piplod's premium air-conditioned study space. Creating the perfect environment for students to focus, learn, and achieve their dreams since 2020.</p>
+            </div>
+            <div>
+                <div class="footer-title">Quick Links</div>
+                <ul class="footer-links">
+                    <li><a href="#home" data-hover>Home</a></li>
+                    <li><a href="#services" data-hover>Services</a></li>
+                    <li><a href="#facilities" data-hover>Facilities</a></li>
+                    <li><a href="#plans" data-hover>Pricing</a></li>
+                </ul>
+            </div>
+            <div>
+                <div class="footer-title">Services</div>
+                <ul class="footer-links">
+                    <li><a href="#" data-hover>Study Hall</a></li>
+                    <li><a href="#" data-hover>Silent Zone</a></li>
+                    <li><a href="#" data-hover>Digital Lab</a></li>
+                    <li><a href="#" data-hover>Discussion Room</a></li>
+                </ul>
+            </div>
+            <div>
+                <div class="footer-title">Support</div>
+                <ul class="footer-links">
+                    <li><a href="#contact" data-hover>Contact Us</a></li>
+                    <li><a href="#" data-hover>FAQ</a></li>
+                    <li><a href="#" data-hover>Terms</a></li>
+                    <li><a href="#" data-hover>Privacy</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2025 Skyline AC Library, Piplod. All rights reserved. Crafted with 💜</p>
+        </div>
+    </footer>
+
+    <script>
+        // ===== PARTICLE SYSTEM =====
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+        const glowCanvas = document.getElementById('glowCanvas');
+        const glowCtx = glowCanvas.getContext('2d');
+
+        let mouse = { x: 0, y: 0 };
+        let particles = [];
+        let floatingOrbs = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            glowCanvas.width = window.innerWidth;
+            glowCanvas.height = window.innerHeight;
+        }
+
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Particle class
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2 + 0.5;
+                this.speedX = (Math.random() - 0.5) * 0.5;
+                this.speedY = (Math.random() - 0.5) * 0.5;
+                this.opacity = Math.random() * 0.5 + 0.1;
+                this.hue = Math.random() * 60 + 250; // Purple to cyan range
+                this.life = Math.random() * 200 + 100;
+                this.maxLife = this.life;
+            }
+
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                this.life--;
+
+                // Mouse interaction
+                const dx = mouse.x - this.x;
+                const dy = mouse.y - this.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < 150) {
+                    this.x -= dx * 0.01;
+                    this.y -= dy * 0.01;
+                    this.opacity = Math.min(this.opacity + 0.02, 0.8);
+                }
+
+                if (this.life <= 0 || this.x < -10 || this.x > canvas.width + 10 || 
+                    this.y < -10 || this.y > canvas.height + 10) {
+                    this.reset();
+                }
+            }
+
+            draw() {
+                const alpha = (this.life / this.maxLife) * this.opacity;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = `hsla(${this.hue}, 80%, 70%, ${alpha})`;
+                ctx.fill();
+
+                // Glow effect
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size * 3, 0, Math.PI * 2);
+                ctx.fillStyle = `hsla(${this.hue}, 80%, 70%, ${alpha * 0.1})`;
+                ctx.fill();
+            }
+        }
+
+        // Floating Orb class for background
+        class FloatingOrb {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.radius = Math.random() * 100 + 50;
+                this.speedX = (Math.random() - 0.5) * 0.3;
+                this.speedY = (Math.random() - 0.5) * 0.3;
+                this.hue = Math.random() * 60 + 250;
+                this.opacity = Math.random() * 0.04 + 0.01;
+            }
+
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+
+                if (this.x < -this.radius) this.x = canvas.width + this.radius;
+                if (this.x > canvas.width + this.radius) this.x = -this.radius;
+                if (this.y < -this.radius) this.y = canvas.height + this.radius;
+                if (this.y > canvas.height + this.radius) this.y = -this.radius;
+            }
+
+            draw() {
+                const gradient = glowCtx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius);
+                gradient.addColorStop(0, `hsla(${this.hue}, 80%, 50%, ${this.opacity})`);
+                gradient.addColorStop(1, 'transparent');
+                glowCtx.beginPath();
+                glowCtx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                glowCtx.fillStyle = gradient;
+                glowCtx.fill();
+            }
+        }
+
+        // Initialize particles
+        for (let i = 0; i < 150; i++) {
+            particles.push(new Particle());
+        }
+        for (let i = 0; i < 8; i++) {
+            floatingOrbs.push(new FloatingOrb());
+        }
+
+        // Draw connections between nearby particles
+        function drawConnections() {
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < 120) {
+                        const alpha = (1 - dist / 120) * 0.15;
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.strokeStyle = `rgba(168, 85, 247, ${alpha})`;
+                        ctx.lineWidth = 0.5;
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            glowCtx.clearRect(0, 0, glowCanvas.width, glowCanvas.height);
+
+            // Update and draw floating orbs
+            floatingOrbs.forEach(orb => {
+                orb.update();
+                orb.draw();
+            });
+
+            // Update and draw particles
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            drawConnections();
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+        // ===== CURSOR =====
+        const cursor = document.getElementById('cursor');
+        const cursorDot = document.getElementById('cursorDot');
+        const mouseGlow = document.getElementById('mouseGlow');
+
+        document.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+
+            cursor.style.left = e.clientX - 10 + 'px';
+            cursor.style.top = e.clientY - 10 + 'px';
+            cursorDot.style.left = e.clientX - 3 + 'px';
+            cursorDot.style.top = e.clientY - 3 + 'px';
+            mouseGlow.style.left = e.clientX + 'px';
+            mouseGlow.style.top = e.clientY + 'px';
+        });
+
+        document.querySelectorAll('[data-hover]').forEach(el => {
+            el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
+            el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
+        });
+
+        // ===== NAV SCROLL =====
+        window.addEventListener('scroll', () => {
+            const nav = document.getElementById('nav');
+            if (window.scrollY > 50) {
+                nav.classList.add('scrolled');
+            } else {
+                nav.classList.remove('scrolled');
+            }
+        });
+
+        // ===== MOBILE MENU =====
+        const mobileToggle = document.getElementById('mobileToggle');
+        const mobileMenu = document.getElementById('mobileMenu');
+
+        mobileToggle.addEventListener('click', () => {
+            mobileMenu.classList.toggle('active');
+        });
+
+        function closeMobile() {
+            mobileMenu.classList.remove('active');
+        }
+
+        // ===== SCROLL REVEAL =====
+        const revealElements = document.querySelectorAll('.reveal');
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach((entry, index) => {
+                if (entry.isIntersecting) {
+                    setTimeout(() => {
+                        entry.target.classList.add('visible');
+                    }, index * 100);
+                }
+            });
+        }, { threshold: 0.1 });
+
+        revealElements.forEach(el => revealObserver.observe(el));
+
+        // ===== COUNTER ANIMATION =====
+        const statNumbers = document.querySelectorAll('.stat-number');
+        const counterObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const target = parseInt(entry.target.dataset.count);
+                    let current = 0;
+                    const increment = target / 60;
+                    const timer = setInterval(() => {
+                        current += increment;
+                        if (current >= target) {
+                            current = target;
+                            clearInterval(timer);
+                        }
+                        entry.target.textContent = Math.round(current) + (entry.target.dataset.count === '98' ? '%' : '+');
+                    }, 16);
+                    counterObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.5 });
+
+        statNumbers.forEach(el => counterObserver.observe(el));
+
+        // ===== LIVE CLOCK =====
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('liveClock').textContent = `${hours}:${minutes}:${seconds}`;
+
+            // Check if library is open (simplified)
+            const currentHour = now.getHours();
+            const statusBadge = document.getElementById('statusBadge');
+            const isOpen = currentHour >= 6 && currentHour < 23;
+            
+            if (isOpen) {
+                statusBadge.className = 'timing-status open';
+                statusBadge.innerHTML = '<span class="status-dot green"></span> Open Now';
+            } else {
+                statusBadge.className = 'timing-status closed';
+                statusBadge.innerHTML = '<span class="status-dot red"></span> Closed';
+            }
+        }
+
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // ===== FORM HANDLER =====
+        function handleSubmit(e) {
+            e.preventDefault();
+            const btn = e.target.querySelector('.form-submit');
+            btn.textContent = 'Message Sent! ✅';
+            btn.style.background = 'linear-gradient(135deg, #22c55e, #10b981)';
+            setTimeout(() => {
+                btn.textContent = 'Send Message ✨';
+                btn.style.background = 'linear-gradient(135deg, var(--primary), var(--pink))';
+                e.target.reset();
+            }, 3000);
+        }
+
+        // ===== SMOOTH SCROLL =====
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+        // ===== PARALLAX ON SCROLL =====
+        window.addEventListener('scroll', () => {
+            const scrolled = window.pageYOffset;
+            const orbs = document.querySelectorAll('.orb');
+            orbs.forEach((orb, i) => {
+                const speed = (i + 1) * 0.15;
+                orb.style.transform = `translateY(${scrolled * speed}px)`;
+            });
+        });
+
+        // ===== ADD SPARKLE ON CLICK =====
+        document.addEventListener('click', (e) => {
+            for (let i = 0; i < 8; i++) {
+                const sparkle = document.createElement('div');
+                sparkle.style.cssText = `
+                    position: fixed;
+                    width: 4px;
+                    height: 4px;
+                    background: ${['#a855f7', '#22d3ee', '#ec4899', '#f59e0b'][Math.floor(Math.random() * 4)]};
+                    border-radius: 50%;
+                    pointer-events: none;
+                    z-index: 99999;
+                    left: ${e.clientX}px;
+                    top: ${e.clientY}px;
+                    animation: sparkleAnim 0.6s ease forwards;
+                `;
+                document.body.appendChild(sparkle);
+                setTimeout(() => sparkle.remove(), 600);
+            }
+        });
+
+        // Add sparkle animation
+        const sparkleStyle = document.createElement('style');
+        sparkleStyle.textContent = `
+            @keyframes sparkleAnim {
+                0% { transform: translate(0, 0) scale(1); opacity: 1; }
+                100% { 
+                    transform: translate(${() => ''}var(--tx), var(--ty)) scale(0); 
+                    opacity: 0; 
+                }
+            }
+        `;
+        document.head.appendChild(sparkleStyle);
+
+        // Fix sparkle animation with random directions
+        document.addEventListener('click', (e) => {
+            for (let i = 0; i < 8; i++) {
+                const angle = (Math.PI * 2 * i) / 8;
+                const velocity = 30 + Math.random() * 30;
+                const tx = Math.cos(angle) * velocity;
+                const ty = Math.sin(angle) * velocity;
+
+                const sparkle = document.createElement('div');
+                const color = ['#a855f7', '#22d3ee', '#ec4899', '#f59e0b'][Math.floor(Math.random() * 4)];
+                sparkle.style.cssText = `
+                    position: fixed;
+                    width: ${Math.random() * 4 + 2}px;
+                    height: ${Math.random() * 4 + 2}px;
+                    background: ${color};
+                    border-radius: 50%;
+                    pointer-events: none;
+                    z-index: 99999;
+                    left: ${e.clientX}px;
+                    top: ${e.clientY}px;
+                    box-shadow: 0 0 6px ${color};
+                    transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+                    opacity: 1;
+                `;
+                document.body.appendChild(sparkle);
+                
+                requestAnimationFrame(() => {
+                    sparkle.style.transform = `translate(${tx}px, ${ty}px) scale(0)`;
+                    sparkle.style.opacity = '0';
+                });
+
+                setTimeout(() => sparkle.remove(), 700);
+            }
+        });
+
+        // ===== TILT EFFECT ON CARDS =====
+        document.querySelectorAll('.service-card, .plan-card, .testimonial-card').forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                const rotateX = (y - centerY) / 20;
+                const rotateY = (centerX - x) / 20;
+
+                card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-10px)`;
+            });
+
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = '';
+            });
+        });
+
+        console.log('%c✨ Skyline AC Library Website', 'color: #a855f7; font-size: 20px; font-weight: bold;');
+        console.log('%cBuilt with 💜 for students, by a student', 'color: #22d3ee; font-size: 12px;');
+    </script>
+</body>
+</html>
